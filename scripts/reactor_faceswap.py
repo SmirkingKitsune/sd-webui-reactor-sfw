@@ -21,6 +21,7 @@ from reactor_ui import (
     ui_tools,
     ui_settings,
     ui_detection,
+    ui_interrogation,
 )
 from scripts.reactor_logger import logger
 from scripts.reactor_swapper import (
@@ -87,7 +88,10 @@ class FaceSwapScript(scripts.Script):
 
             # TAB TOOLS
             ui_tools.show()
-            
+
+            # TAB INTERROGATION
+            ui_interrogation.show(is_img2img=is_img2img)
+
             # TAB SETTINGS
             model, device, console_logging_level, source_hash_check, target_hash_check = ui_settings.show()
             
@@ -296,6 +300,8 @@ class FaceSwapScript(scripts.Script):
                         result, output, swapped = swap_face(
                             self.source,
                             p.init_images[i],
+                            p=p,
+                            interrogate=True,
                             source_faces_index=self.source_faces_index,
                             faces_index=self.faces_index,
                             model=self.model,
@@ -364,6 +370,8 @@ class FaceSwapScript(scripts.Script):
                         result, output, swapped = swap_face(
                             self.source,
                             img,
+                            p=p,
+                            interrogate=True,
                             source_faces_index=self.source_faces_index,
                             faces_index=self.faces_index,
                             model=self.model,
@@ -465,6 +473,8 @@ class FaceSwapScript(scripts.Script):
             result, output, swapped = swap_face(
                 self.source,
                 image,
+                p=p,
+                interrogate=True,
                 source_faces_index=self.source_faces_index,
                 faces_index=self.faces_index,
                 model=self.model,
@@ -530,7 +540,10 @@ class FaceSwapScriptExtras(scripts_postprocessing.ScriptPostprocessing):
                         
             # TAB TOOLS
             ui_tools.show()
-                        
+
+            # TAB INTERROGATION
+            ui_interrogation.show(is_img2img=False)
+
             # TAB SETTINGS
             model, device, console_logging_level, source_hash_check, target_hash_check = ui_settings.show(hash_check_block=False)
                         
@@ -688,6 +701,8 @@ class FaceSwapScriptExtras(scripts_postprocessing.ScriptPostprocessing):
                 result, output, swapped = swap_face(
                     self.source,
                     image,
+                    p=p,
+                    interrogate=True,
                     source_faces_index=self.source_faces_index,
                     faces_index=self.faces_index,
                     model=self.model,
