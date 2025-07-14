@@ -36,6 +36,7 @@ from modules.shared import state
 from scripts.reactor_logger import logger
 from reactor_modules.reactor_mask import apply_face_mask
 import scripts.reactor_sfw as sfw
+from scripts.reactor_interrogator import INTERROGATOR, interrogate_face
 
 try:
     from modules.paths_internal import models_path
@@ -366,6 +367,8 @@ def check_sfw_image(img: Image.Image):
 def swap_face(
     source_img: Image.Image,
     target_img: Image.Image,
+    p=None,
+    interrogate=False,
     model: Union[str, None] = None,
     source_faces_index: List[int] = [0],
     faces_index: List[int] = [0],
@@ -524,7 +527,7 @@ def swap_face(
                     
                     elif source_face is not None:
 
-                        result_image, output, swapped = operate(source_img_ff[i],target_img,target_img_orig,model,source_faces_index,faces_index,source_faces,target_faces,gender_source,gender_target,source_face,wrong_gender,source_age,source_gender,output,swapped,mask_face,entire_mask_image,enhancement_options,detection_options)
+                        result_image, output, swapped = operate(source_img_ff[i],target_img,target_img_orig,model,source_faces_index,faces_index,source_faces,target_faces,gender_source,gender_target,source_face,wrong_gender,source_age,source_gender,output,swapped,mask_face,entire_mask_image,enhancement_options,detection_options,p,interrogate)
 
                         result.append(result_image)
 
@@ -633,7 +636,7 @@ def swap_face(
                 
                 elif source_face is not None:
 
-                    result_image, output, swapped = operate(source_img,target_img,target_img_orig,model,source_faces_index,faces_index,source_faces,target_faces,gender_source,gender_target,source_face,wrong_gender,source_age,source_gender,output,swapped,mask_face,entire_mask_image,enhancement_options,detection_options)
+                    result_image, output, swapped = operate(source_img,target_img,target_img_orig,model,source_faces_index,faces_index,source_faces,target_faces,gender_source,gender_target,source_face,wrong_gender,source_age,source_gender,output,swapped,mask_face,entire_mask_image,enhancement_options,detection_options,p,interrogate)
                 
                 else:
                     logger.status("No source face(s) in the provided Index")
@@ -765,6 +768,8 @@ def operate(
         entire_mask_image,
         enhancement_options,
         detection_options,
+        p=None,
+        interrogate=False,
     ):
     result = target_img
     face_swapper = getFaceSwapModel(model)
@@ -797,12 +802,24 @@ def operate(
             if target_face is not None and wrong_gender == 0:
                 logger.status("Swapping Source into Target")
                 swapped_image = face_swapper.get(result, target_face, source_face)
-                                        
+
                 if mask_face:
                     result = apply_face_mask(swapped_image=swapped_image,target_image=result,target_face=target_face,entire_mask_image=entire_mask_image)
                 else:
                     result = swapped_image
                 swapped += 1
+                if interrogate and INTERROGATOR is not None and p is not None:
+                    x1, y1, x2, y2 = [int(v) for v in target_face.bbox]
+                    pad = 50
+                    x1 = max(0, x1 - pad)
+                    y1 = max(0, y1 - pad)
+                    x2 = min(result.shape[1], x2 + pad)
+                    y2 = min(result.shape[0], y2 + pad)
+                    cropped = Image.fromarray(result[y1:y2, x1:x2, ::-1])
+                    text = interrogate_face(p, cropped)
+                    if text:
+                        logger.status(f"Interrogation: {text}")
+                        output.append(f"Interrogation={text}\n")
             
             elif wrong_gender == 1:
                 wrong_gender = 0
